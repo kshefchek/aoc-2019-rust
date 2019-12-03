@@ -6,6 +6,7 @@ use std::io::{BufRead, BufReader, Error};
 
 
 fn main() {
+    // https://adventofcode.com/2019/day/1
     println!("Fuel requirement: {:?}", part_one()
         .expect("Could not calculate fuel requirement"));
 
