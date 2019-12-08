@@ -6,12 +6,18 @@ use std::io::{BufRead, BufReader, Error};
 
 fn main() {
     // https://adventofcode.com/2019/day/5
-    let input = 1;
     let mut intcode = get_intcode().unwrap();
     println!("Intcode is {:?}", intcode);
 
-    let output = parse_intcode(&mut intcode, input);
-    println!("Output code is {:?}", output);
+    let mut input = 1;
+    let mut output = parse_intcode(&mut intcode, input);
+    println!("Output code for part one {:?}", output);
+
+    input = 5;
+    // Reset the intcode instructions
+    intcode = get_intcode().unwrap();
+    output = parse_intcode(&mut intcode, input);
+    println!("Output code for part two {:?}", output);
 
 }
 
@@ -37,17 +43,20 @@ fn parse_intcode (intcode: &mut Vec<i32>, input: i32) -> Vec<i32> {
     let mut opcode = get_opcode(intcode[0] as usize);
 
     match opcode {
-        1 | 2  => skip = 4,
-        3 | 4  => skip = 2,
+        1 | 2 | 7 | 8 => skip = 4,
+        3 | 4 => skip = 2,
+        5 | 6 => skip = 3,
         99 => skip = 0,
         _ => panic!("Cannot parse first opcode {:?}", opcode),
     }
 
-    for i in 0..intcode.len() {
-        let mut code = intcode[i] as usize;
+    let mut buff_iter = 0..intcode.len();
+
+    while let Some(i) = buff_iter.next() {
+        let mut next_index = i;
         if skip > 0 {
             skip -= 1;
-            frame.push(code);
+            frame.push(intcode[i] as usize);
         } else {
             //let mut instructions: Vec<i32> = Vec::with_capacity(4);
             let instructions = process_parameter_mode(&frame, intcode);
@@ -57,19 +66,47 @@ fn parse_intcode (intcode: &mut Vec<i32>, input: i32) -> Vec<i32> {
                 2 => intcode[frame[3]] = instructions[0] * instructions[1],
                 3 => intcode[frame[1]] = input,
                 4 => output.push(instructions[0]),
+                5 => {
+                    if instructions[0] != 0 {
+                        let skip_n = instructions[1] - i as i32 - 1;
+                        buff_iter.nth(skip_n as usize);
+                        next_index = instructions[1] as usize;
+                    }
+                },
+                6 => {
+                    if instructions[0] == 0 {
+                        let skip_n = instructions[1] - i as i32 - 1;
+                        buff_iter.nth(skip_n as usize);
+                        next_index = instructions[1] as usize;
+                    }
+                },
+                7 => {
+                    if instructions[0] < instructions[1] {
+                        intcode[frame[3]] = 1;
+                    } else {
+                        intcode[frame[3]] = 0;
+                    }
+                },
+                8 => {
+                    if instructions[0] == instructions[1] {
+                        intcode[frame[3]] = 1;
+                    } else {
+                        intcode[frame[3]] = 0;
+                    }
+                },
                 99 => break,
                 _ => panic!("Cannot parse opcode {:?}", opcode),
             }
 
             frame.clear();
             // after running the instruction the next code may have changed
-            code = intcode[i] as usize;
-            opcode = get_opcode(code);
-            frame.push(code);
+            opcode = get_opcode(intcode[next_index] as usize);
+            frame.push(intcode[next_index] as usize);
 
             match opcode {
-                1 | 2 => skip = 3,
+                1 | 2 | 7 | 8 => skip = 3,
                 3 | 4 => skip = 1,
+                5 | 6 => skip = 2,
                 99 => skip = 0,
                 _ => {
                     println!("Cannot parse opcode {:?}", opcode);
@@ -99,7 +136,7 @@ fn process_parameter_mode(frame: &Vec<usize>, memory: &Vec<i32>) -> Vec<i32> {
             break;
         }
         if sequence[index] == 0 {
-            instructions.push(memory[*fram as usize]);
+            instructions.push(memory[*fram]);
         } else if sequence[index] == 1 {
             instructions.push(*fram as i32);
         } else {
