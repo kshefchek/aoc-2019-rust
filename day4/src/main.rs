@@ -6,7 +6,7 @@ fn main() {
 
 fn part_one() -> i32 {
     let mut count = 0;
-    for pwd in 171309..643604 {
+    for pwd in 171309..=643603 {
         let mut score = 0;
         let sequence: Vec<i32> = pwd
             .to_string()
@@ -32,7 +32,7 @@ fn part_one() -> i32 {
 
 fn part_two() -> i32 {
     let mut count = 0;
-    for pwd in 171309..643604 {
+    for pwd in 171309..=643603 {
         let mut is_valid = true;
 
         // zero pad int
